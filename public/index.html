@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kahoot Bot Spammer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="/socket.io/socket.io.js"></script>
+<style>
+:root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #1f3050;
+    --gold: #c9a96e;
+    --gold-dim: #a68a4e;
+    --cream: #e8d5b7;
+    --cream-dim: #b8a38a;
+    --red: #c25b5b;
+    --green: #5b9d6e;
+    --yellow: #c2a55b;
+    --radius: 12px;
+    --font-title: 'Playfair Display', serif;
+    --font-body: 'Lora', serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--cream);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    background-image:
+        radial-gradient(ellipse at 20% 10%, rgba(201,169,110,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 90%, rgba(201,169,110,0.03) 0%, transparent 60%);
+}
+
+/* ===== HEADER ===== */
+.header {
+    text-align: center;
+    padding: 1.5rem 1rem 1rem;
+    animation: fadeDown .8s ease;
+}
+.header h1 {
+    font-family: var(--font-title);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+}
+.header .subtitle {
+    font-size: 0.85rem;
+    color: var(--cream-dim);
+    font-style: italic;
+    margin-top: .3rem;
+}
+
+/* ===== CARD ===== */
+.card {
+    background: var(--surface);
+    border: 1px solid rgba(201,169,110,0.12);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 540px;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    animation: fadeUp .6s ease;
+}
+.card h2 {
+    font-family: var(--font-title);
+    font-size: 1.2rem;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* ===== FORM ===== */
+.form-group { margin-bottom: 1rem; }
+.form-group label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--cream-dim);
+    margin-bottom: .3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.form-group input, .form-group select {
+    width: 100%;
+    padding: .65rem .8rem;
+    background: var(--surface2);
+    border: 1px solid rgba(201,169,110,0.15);
+    border-radius: 8px;
+    color: var(--cream);
+    font-family: var(--font-body);
+    font-size: .95rem;
+    transition: border-color .2s;
+    -webkit-appearance: none;
+}
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+.mode-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .5rem;
+}
+.mode-btn {
+    padding: .6rem .5rem;
+    background: var(--surface2);
+    border: 1px solid rgba(201,169,110,0.12);
+    border-radius: 8px;
+    color: var(--cream-dim);
+    font-family: var(--font-body);
+    font-size: .85rem;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: center;
+}
+.mode-btn:hover { border-color: var(--gold-dim); color: var(--cream); }
+.mode-btn.active {
+    background: rgba(201,169,110,0.15);
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+/* ===== BUTTONS ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: .75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: .95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .25s;
+    width: 100%;
+}
+.btn-primary {
+    background: var(--gold);
+    color: var(--bg);
+}
+.btn-primary:hover { background: #d4b87a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(201,169,110,0.25); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary.pulse { animation: pulse 2s infinite; }
+
+.btn-small {
+    padding: .45rem .75rem;
+    font-size: .78rem;
+    width: auto;
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid rgba(201,169,110,0.15);
+    color: var(--cream-dim);
+}
+.btn-small:hover { border-color: var(--gold); color: var(--cream); }
+.btn-small.active { border-color: var(--gold); color: var(--gold); background: rgba(201,169,110,0.12); }
+.btn-small.danger { border-color: rgba(194,91,91,0.3); color: var(--red); }
+.btn-small.danger:hover { border-color: var(--red); background: rgba(194,91,91,0.1); }
+
+.cmd-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-bottom: .6rem;
+    align-items: center;
+}
+.cmd-row .label {
+    font-size: .75rem;
+    color: var(--cream-dim);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-right: .3rem;
+    min-width: 4rem;
+}
+
+/* ===== DASHBOARD ===== */
+#dashboard { display: none; }
+#dashboard.visible { display: block; animation: fadeUp .5s ease; }
+
+.progress-wrap {
+    margin-bottom: 1rem;
+}
+.progress-bar {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 3px;
+    transition: width .4s ease;
+    width: 0%;
+}
+.progress-text {
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    color: var(--cream-dim);
+    margin-top: .3rem;
+    text-align: right;
+}
+
+/* Question block */
+.question-block {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: .8rem;
+    border-left: 3px solid var(--gold);
+}
+.question-block .q-header {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--cream-dim);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: .3rem;
+}
+.question-block .q-text {
+    font-family: var(--font-title);
+    font-size: 1.05rem;
+    color: var(--cream);
+    margin-bottom: .6rem;
+    line-height: 1.4;
+}
+.question-block .choices { display: flex; flex-direction: column; gap: .35rem; }
+.question-block .choice {
+    font-family: var(--font-body);
+    font-size: .85rem;
+    color: var(--cream-dim);
+    padding: .4rem .6rem;
+    background: rgba(0,0,0,0.15);
+    border-radius: 6px;
+}
+.choice-idx {
+    display: inline-block;
+    width: 1.4rem; height: 1.4rem;
+    line-height: 1.4rem;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    background: var(--surface);
+    border-radius: 4px;
+    margin-right: .5rem;
+    color: var(--gold);
+}
+.no-data-hint {
+    font-size: .75rem;
+    color: var(--yellow);
+    font-style: italic;
+    padding: .4rem 0;
+}
+
+/* Log terminal */
+.log-terminal {
+    background: #0f1525;
+    border-radius: 10px;
+    padding: .8rem;
+    max-height: 280px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    line-height: 1.6;
+    border: 1px solid rgba(201,169,110,0.08);
+    -webkit-overflow-scrolling: touch;
+}
+.log-terminal .log-line { padding: .1rem 0; animation: fadeIn .2s ease; }
+.log-terminal .log-line.join { color: var(--green); }
+.log-terminal .log-line.answer { color: var(--cream-dim); }
+.log-terminal .log-line.warn { color: var(--yellow); }
+.log-terminal .log-line.error { color: var(--red); }
+.log-terminal .log-line.info { color: var(--cream-dim); }
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(201,169,110,.3); } 50% { box-shadow:0 0 0 10px rgba(201,169,110,0); } }
+
+/* ===== MOBILE ===== */
+@media (max-width: 480px) {
+    body { padding: .5rem; }
+    .card { padding: 1rem; border-radius: 10px; }
+    .mode-grid { grid-template-columns: repeat(2, 1fr); }
+    .log-terminal { max-height: 200px; font-size: .65rem; }
+    .btn { padding: .7rem 1rem; font-size: .88rem; }
+    .btn-small { padding: .4rem .6rem; font-size: .7rem; }
+    .cmd-row { gap: .25rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Kahoot Bot Spammer</h1>
+    <div class="subtitle">Classic &amp; Refined</div>
+</div>
+
+<!-- SETUP CARD -->
+<div class="card" id="setup-card">
+    <h2>Launch Configuration</h2>
+    <div class="form-group"><label>Game PIN</label><input type="text" id="pin" placeholder="e.g. 1234567" inputmode="numeric"></div>
+    <div class="form-group"><label>Bot Name</label><input type="text" id="baseName" placeholder="Bot"></div>
+    <div class="form-group"><label>Count</label><input type="number" id="count" placeholder="50" min="1" max="500"></div>
+
+    <label style="display:block;font-size:.8rem;color:var(--cream-dim);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.05em;">Answer Mode</label>
+    <div class="mode-grid" id="mode-grid">
+        <button class="mode-btn" data-mode="none">None</button>
+        <button class="mode-btn" data-mode="random">Random</button>
+        <button class="mode-btn" data-mode="fix_0">Fix #1</button>
+        <button class="mode-btn" data-mode="fix_1">Fix #2</button>
+        <button class="mode-btn" data-mode="fix_2">Fix #3</button>
+        <button class="mode-btn" data-mode="fix_3">Fix #4</button>
+    </div>
+
+    <button class="btn btn-primary pulse" id="launch-btn" style="margin-top:1.2rem;">Launch Bots</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+    <div class="card">
+        <h2 style="display:flex;justify-content:space-between;align-items:center;">
+            Live Dashboard
+            <span style="font-family:var(--font-mono);font-size:.75rem;color:var(--cream-dim);" id="mode-display">none</span>
+        </h2>
+
+        <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <div class="progress-text" id="progress-text">0 / 0</div>
+        </div>
+
+        <div class="cmd-row">
+            <span class="label">Mode</span>
+            <button class="btn-small" data-m="random">Random</button>
+            <button class="btn-small" data-m="fix_0">Fix 1</button>
+            <button class="btn-small" data-m="fix_1">Fix 2</button>
+            <button class="btn-small" data-m="fix_2">Fix 3</button>
+            <button class="btn-small" data-m="fix_3">Fix 4</button>
+            <button class="btn-small" data-m="none">None</button>
+        </div>
+        <div class="cmd-row">
+            <span class="label">Round</span>
+            <button class="btn-small" data-r="0">#0</button>
+            <button class="btn-small" data-r="1">#1</button>
+            <button class="btn-small" data-r="2">#2</button>
+            <button class="btn-small" data-r="3">#3</button>
+            <button class="btn-small danger" id="btn-leave" style="margin-left:auto;">Leave All</button>
+        </div>
+
+        <div id="question-area"></div>
+
+        <div class="log-terminal" id="log-terminal"><div class="log-line info">Awaiting launch...</div></div>
+    </div>
+</div>
+
+<script>
+// ===== STATE =====
+let selectedMode = "none";
+let socket;
+
+// ===== MODE BUTTONS (SETUP) =====
+document.querySelectorAll("#mode-grid .mode-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll("#mode-grid .mode-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedMode = btn.dataset.mode;
+    });
+});
+
+// ===== LAUNCH =====
+document.getElementById("launch-btn").addEventListener("click", () => {
+    const pin = document.getElementById("pin").value.trim();
+    const baseName = document.getElementById("baseName").value.trim() || "Bot";
+    const count = parseInt(document.getElementById("count").value) || 10;
+    if (!pin || !/^\d+$/.test(pin)) { alert("Invalid PIN"); return; }
+    if (count < 1 || count > 500) { alert("Count 1-500"); return; }
+
+    document.getElementById("setup-card").style.display = "none";
+    document.getElementById("dashboard").classList.add("visible");
+    document.getElementById("log-terminal").innerHTML = '<div class="log-line info">Connecting...</div>';
+    document.getElementById("mode-display").textContent = selectedMode;
+
+    connectAndLaunch(pin, baseName, count, selectedMode);
+});
+
+// ===== SOCKET.IO =====
+function connectAndLaunch(pin, baseName, count, mode) {
+    socket = io();
+
+    socket.on("connect", () => {
+        addLog(`Server connected`, "info");
+        socket.emit("launch", { pin, baseName, count, mode });
+    });
+
+    socket.on("launchStarted", (d) => {
+        addLog(`Launching ${d.count} bots to PIN ${d.pin}... [${d.mode}]`, "info");
+    });
+
+    socket.on("botJoined", (d) => {
+        addLog(`[${d.name}] Joined (${d.joined}/${d.total})`, "join");
+        updateProgress(d.joined, d.total);
+    });
+
+    socket.on("botDisconnect", (d) => {
+        addLog(`[${d.name}] DC: ${d.reason}`, "error");
+        updateProgress(d.joined, d.total);
+    });
+
+    socket.on("progress", (d) => {
+        updateProgress(d.sent, d.total);
+    });
+
+    socket.on("launchDone", () => {
+        addLog("All bots launched!", "info");
+        updateProgress(document.getElementById("progress-text").textContent.split("/")[0].trim(), 999);
+    });
+
+    socket.on("log", (d) => {
+        addLog(d.msg, d.type || "info");
+    });
+
+    socket.on("questionStart", (d) => {
+        renderQuestion(d);
+    });
+
+    socket.on("questionEnd", (d) => {
+        addLog(`[${d.name}] Ans:${d.choice} | ${d.isCorrect ? "OK" : "WRONG"} | ${d.points >= 0 ? "+" + d.points : d.points} | Score:${d.totalScore} | #${d.rank}`, d.isCorrect ? "join" : "error");
+    });
+
+    socket.on("quizEnd", (d) => {
+        addLog(`[${d.name}] QUIZ END | Final: ${d.totalScore} pts | Rank #${d.rank}`, "info");
+    });
+
+    socket.on("modeChanged", (d) => {
+        document.getElementById("mode-display").textContent = d.mode;
+        addLog(`Mode changed: ${d.mode}`, "info");
+    });
+
+    socket.on("allLeft", () => {
+        addLog("All bots have left.", "info");
+        updateProgress(0, 0);
+    });
+}
+
+// ===== UI HELPERS =====
+function addLog(msg, cls) {
+    const term = document.getElementById("log-terminal");
+    term.innerHTML += `<div class="log-line ${cls}">${msg}</div>`;
+    term.scrollTop = term.scrollHeight;
+    if (term.children.length > 300) term.removeChild(term.firstChild);
+}
+
+function updateProgress(current, total) {
+    const pct = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
+    document.getElementById("progress-fill").style.width = pct + "%";
+    document.getElementById("progress-text").textContent = `${current} / ${total}`;
+}
+
+function renderQuestion(d) {
+    const area = document.getElementById("question-area");
+    let choicesHtml = "";
+    if (d.hasData) {
+        choicesHtml = d.choices.map((c, i) =>
+            `<div class="choice"><span class="choice-idx">${i}</span>${c}</div>`
+        ).join("");
+    } else {
+        choicesHtml = `<div class="no-data-hint">Question data unavailable &mdash; Kahoot restricts it for questions 2+</div>`;
+    }
+    area.innerHTML = `
+        <div class="question-block">
+            <div class="q-header">Question #${d.index + 1} &middot; ${d.nChoices} choices &middot; ${d.type}</div>
+            ${d.text ? `<div class="q-text">${d.text}</div>` : ""}
+            <div class="choices">${choicesHtml}</div>
+        </div>`;
+}
+
+// ===== COMMAND BUTTONS =====
+document.querySelectorAll("#dashboard [data-m]").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const m = btn.dataset.m;
+        if (socket) socket.emit("setMode", m);
+        document.querySelectorAll("#dashboard [data-m]").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+    });
+});
+
+document.querySelectorAll("#dashboard [data-r]").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const r = parseInt(btn.dataset.r);
+        if (socket) socket.emit("setRound", r);
+        addLog(`Round override: ALL bots pick #${r} next question`, "warn");
+    });
+});
+
+document.getElementById("btn-leave").addEventListener("click", () => {
+    if (socket) socket.emit("leaveAll");
+});
+</script>
+</body>
+</html>
