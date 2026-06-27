@@ -6,12 +6,12 @@ Spam Kahoot lobbies with bots. CLI + Web App.
 
 ### Windows (PowerShell)
 ```powershell
-git clone https://github.com/ahmad123112/KahootBotSpammer.git; cd KahootBotSpammer; npm install; Write-Host "Done! Run: node kahoot_bot_spammer.js or node server.js"
+git clone https://github.com/ahmad123112/Kahoot-Bot.git; cd Kahoot-Bot; npm install; Write-Host "Done! Run: node kahoot_bot_spammer.js or node server.js"
 ```
 
 ### Linux / macOS
 ```bash
-git clone https://github.com/ahmad123112/KahootBotSpammer.git && cd KahootBotSpammer && npm install && echo "Done! Run: node kahoot_bot_spammer.js or node server.js"
+git clone https://github.com/ahmad123112/Kahoot-Bot.git && cd Kahoot-Bot && npm install && echo "Done! Run: node kahoot_bot_spammer.js or node server.js"
 ```
 
 ---
